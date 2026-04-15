@@ -39,6 +39,18 @@ enum PetSize {
   UNKNOWN
 }
 
+enum AgeUnit {
+  WEEKS
+  MONTHS
+  YEARS
+}
+
+enum EnergyLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
 enum AdoptionRequestStatus {
   PENDING
   CONTACTED
@@ -107,9 +119,17 @@ model PetListing {
   name              String
   description       String             @db.Text
   ageLabel          String
+  ageValue          Int?
+  ageUnit           AgeUnit?
   sex               PetSex             @default(UNKNOWN)
   size              PetSize            @default(UNKNOWN)
-  breed             String?
+  breedPrimary      String?
+  breedSecondary    String?
+  isMixedBreed      Boolean?
+  energyLevel       EnergyLevel?
+  houseTrained      Boolean?
+  spayedNeutered    Boolean?
+  vaccinated        Boolean?
   city              String
   state             String
   contactEmail      String
@@ -117,7 +137,8 @@ model PetListing {
   rescueStory       String?            @db.Text
   healthNotes       String?            @db.Text
   goodWithKids      Boolean?
-  goodWithPets      Boolean?
+  goodWithDogs      Boolean?
+  goodWithCats      Boolean?
   status            ListingStatus      @default(DRAFT)
   rejectionReason   String?            @db.Text
   publishedAt       DateTime?
@@ -129,6 +150,11 @@ model PetListing {
   approvedByAdmin   User?              @relation("ApprovedByAdmin", fields: [approvedByAdminId], references: [id], onDelete: SetNull)
   images            PetImage[]
   adoptionRequests  AdoptionRequest[]
+
+  @@index([status, createdAt])
+  @@index([categoryId, status])
+  @@index([city, state, status])
+  @@index([ownerId, status])
 }
 
 model PetImage {
@@ -155,7 +181,9 @@ model AdoptionRequest {
   listing        PetListing            @relation(fields: [listingId], references: [id], onDelete: Cascade)
   requester      User                  @relation(fields: [requesterId], references: [id], onDelete: Cascade)
 
-  @@unique([listingId, requesterId, status], map: "listing_requester_status_unique")
+  @@index([listingId, requesterId])
+  @@index([requesterId, createdAt])
+  @@index([status, createdAt])
 }
 
 model AuditLog {

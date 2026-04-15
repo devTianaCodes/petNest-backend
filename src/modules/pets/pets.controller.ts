@@ -24,6 +24,27 @@ function sanitizePublicListing<T extends { contactEmail?: string | null; contact
   };
 }
 
+function normalizeListingPayload(body: Request["body"]) {
+  return {
+    ...body,
+    ageValue: body.ageValue ?? null,
+    ageUnit: body.ageUnit ?? null,
+    breedPrimary: body.breedPrimary || null,
+    breedSecondary: body.breedSecondary || null,
+    isMixedBreed: body.isMixedBreed ?? null,
+    energyLevel: body.energyLevel ?? null,
+    houseTrained: body.houseTrained ?? null,
+    spayedNeutered: body.spayedNeutered ?? null,
+    vaccinated: body.vaccinated ?? null,
+    contactPhone: body.contactPhone || null,
+    rescueStory: body.rescueStory || null,
+    healthNotes: body.healthNotes || null,
+    goodWithKids: body.goodWithKids ?? null,
+    goodWithDogs: body.goodWithDogs ?? null,
+    goodWithCats: body.goodWithCats ?? null
+  };
+}
+
 export async function getPublicListings(req: Request, res: Response) {
   const query = req.query as unknown as {
     category?: string;
@@ -31,6 +52,12 @@ export async function getPublicListings(req: Request, res: Response) {
     state?: string;
     sex?: string;
     size?: string;
+    energyLevel?: string;
+    goodWithKids?: boolean;
+    goodWithDogs?: boolean;
+    goodWithCats?: boolean;
+    vaccinated?: boolean;
+    spayedNeutered?: boolean;
     search?: string;
     page: number;
     limit: number;
@@ -43,12 +70,19 @@ export async function getPublicListings(req: Request, res: Response) {
     ...(query.state ? { state: { contains: query.state } } : {}),
     ...(query.sex ? { sex: query.sex as never } : {}),
     ...(query.size ? { size: query.size as never } : {}),
+    ...(query.energyLevel ? { energyLevel: query.energyLevel as never } : {}),
+    ...(typeof query.goodWithKids === "boolean" ? { goodWithKids: query.goodWithKids } : {}),
+    ...(typeof query.goodWithDogs === "boolean" ? { goodWithDogs: query.goodWithDogs } : {}),
+    ...(typeof query.goodWithCats === "boolean" ? { goodWithCats: query.goodWithCats } : {}),
+    ...(typeof query.vaccinated === "boolean" ? { vaccinated: query.vaccinated } : {}),
+    ...(typeof query.spayedNeutered === "boolean" ? { spayedNeutered: query.spayedNeutered } : {}),
     ...(query.search
       ? {
           OR: [
             { name: { contains: query.search } },
             { description: { contains: query.search } },
-            { breed: { contains: query.search } }
+            { breedPrimary: { contains: query.search } },
+            { breedSecondary: { contains: query.search } }
           ]
         }
       : {})
@@ -102,11 +136,7 @@ export async function createListing(req: Request, res: Response) {
   const listing = await prisma.petListing.create({
     data: {
       ownerId: req.user!.id,
-      ...req.body,
-      breed: req.body.breed || null,
-      contactPhone: req.body.contactPhone || null,
-      rescueStory: req.body.rescueStory || null,
-      healthNotes: req.body.healthNotes || null
+      ...normalizeListingPayload(req.body)
     }
   });
 
@@ -131,11 +161,7 @@ export async function updateListing(req: Request, res: Response) {
   const listing = await prisma.petListing.update({
     where: { id: listingId },
     data: {
-      ...req.body,
-      breed: req.body.breed || null,
-      contactPhone: req.body.contactPhone || null,
-      rescueStory: req.body.rescueStory || null,
-      healthNotes: req.body.healthNotes || null
+      ...normalizeListingPayload(req.body)
     }
   });
 
