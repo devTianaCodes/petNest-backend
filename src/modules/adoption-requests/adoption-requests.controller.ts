@@ -47,7 +47,14 @@ export async function getIncomingRequests(req: Request, res: Response) {
   const items = await prisma.adoptionRequest.findMany({
     where: { listing: { ownerId: req.user!.id } },
     include: {
-      listing: true,
+      listing: {
+        include: {
+          images: {
+            orderBy: { sortOrder: "asc" }
+          },
+          category: true
+        }
+      },
       requester: {
         select: {
           id: true,
