@@ -70,9 +70,11 @@ export async function deleteListingImage(req: Request, res: Response) {
     throw new AppError(404, "Image not found");
   }
 
-  await cloudinary.uploader.destroy(image.cloudinaryPublicId, {
-    resource_type: "image"
-  });
+  if (!image.cloudinaryPublicId.startsWith("external:")) {
+    await cloudinary.uploader.destroy(image.cloudinaryPublicId, {
+      resource_type: "image"
+    });
+  }
 
   await prisma.petImage.delete({
     where: { id: image.id }

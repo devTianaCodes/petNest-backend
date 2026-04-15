@@ -45,6 +45,29 @@ function normalizeListingPayload(body: Request["body"]) {
   };
 }
 
+function hashListingKey(value: string) {
+  let hash = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+  }
+
+  return hash;
+}
+
+function getMixedListingIds(ids: string[]) {
+  return [...ids].sort((left, right) => {
+    const leftHash = hashListingKey(left);
+    const rightHash = hashListingKey(right);
+
+    if (leftHash === rightHash) {
+      return left.localeCompare(right);
+    }
+
+    return leftHash - rightHash;
+  });
+}
+
 export async function getPublicListings(req: Request, res: Response) {
   const query = req.query as unknown as {
     category?: string;
@@ -88,19 +111,28 @@ export async function getPublicListings(req: Request, res: Response) {
       : {})
   };
 
-  const [items, total] = await prisma.$transaction([
-    prisma.petListing.findMany({
-      where,
-      include: listingInclude,
-      skip: (query.page - 1) * query.limit,
-      take: query.limit,
-      orderBy: { createdAt: "desc" }
-    }),
-    prisma.petListing.count({ where })
-  ]);
+  const listingIds = await prisma.petListing.findMany({
+    where,
+    select: { id: true }
+  });
+  const mixedListingIds = getMixedListingIds(listingIds.map((item) => item.id));
+  const total = mixedListingIds.length;
+  const pagedListingIds = mixedListingIds.slice((query.page - 1) * query.limit, query.page * query.limit);
+
+  const items =
+    pagedListingIds.length === 0
+      ? []
+      : await prisma.petListing.findMany({
+          where: { id: { in: pagedListingIds } },
+          include: listingInclude
+        });
+  const itemById = new Map(items.map((item) => [item.id, item]));
+  const orderedItems = pagedListingIds
+    .map((listingId) => itemById.get(listingId))
+    .filter((item): item is (typeof items)[number] => Boolean(item));
 
   return res.json({
-    items: items.map((item) => sanitizePublicListing(item)),
+    items: orderedItems.map((item) => sanitizePublicListing(item)),
     pagination: {
       page: query.page,
       limit: query.limit,

@@ -14,6 +14,8 @@ export function errorHandler(error: unknown, _req: Request, res: Response, _next
     return res.status(error.statusCode).json({ message: error.message });
   }
 
+  console.error(error);
+
   return res.status(500).json({
     message: "Internal server error"
   });
