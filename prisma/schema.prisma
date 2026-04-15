@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING_APPROVAL
+  PUBLISHED
+  REJECTED
+  ADOPTED
+  ARCHIVED
+}
+
+enum PetSex {
+  MALE
+  FEMALE
+  UNKNOWN
+}
+
+enum PetSize {
+  SMALL
+  MEDIUM
+  LARGE
+  UNKNOWN
+}
+
+enum AdoptionRequestStatus {
+  PENDING
+  CONTACTED
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+model User {
+  id                 String                @id @default(cuid())
+  fullName           String
+  email              String                @unique
+  passwordHash       String
+  phone              String?
+  city               String?
+  state              String?
+  isEmailVerified    Boolean               @default(false)
+  role               UserRole              @default(USER)
+  status             UserStatus            @default(ACTIVE)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  ownedListings      PetListing[]
+  adoptionRequests   AdoptionRequest[]
+  refreshTokens      RefreshToken[]
+  verificationTokens EmailVerificationToken[]
+  approvedListings   PetListing[]          @relation("ApprovedByAdmin")
+  auditLogs          AuditLog[]            @relation("AdminAuditLogs")
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RefreshToken {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  userAgent  String?
+  ipAddress  String?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id        String       @id @default(cuid())
+  name      String       @unique
+  slug      String       @unique
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  listings  PetListing[]
+}
+
+model PetListing {
+  id                String             @id @default(cuid())
+  ownerId           String
+  categoryId        String
+  approvedByAdminId String?
+  name              String
+  description       String             @db.Text
+  ageLabel          String
+  sex               PetSex             @default(UNKNOWN)
+  size              PetSize            @default(UNKNOWN)
+  breed             String?
+  city              String
+  state             String
+  contactEmail      String
+  contactPhone      String?
+  rescueStory       String?            @db.Text
+  healthNotes       String?            @db.Text
+  goodWithKids      Boolean?
+  goodWithPets      Boolean?
+  status            ListingStatus      @default(DRAFT)
+  rejectionReason   String?            @db.Text
+  publishedAt       DateTime?
+  approvedAt        DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  owner             User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  category          Category           @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  approvedByAdmin   User?              @relation("ApprovedByAdmin", fields: [approvedByAdminId], references: [id], onDelete: SetNull)
+  images            PetImage[]
+  adoptionRequests  AdoptionRequest[]
+}
+
+model PetImage {
+  id                 String     @id @default(cuid())
+  listingId          String
+  cloudinaryPublicId String
+  imageUrl           String
+  sortOrder          Int        @default(0)
+  createdAt          DateTime   @default(now())
+  listing            PetListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+
+model AdoptionRequest {
+  id             String                @id @default(cuid())
+  listingId      String
+  requesterId    String
+  message        String                @db.Text
+  housingType    String?
+  hasOtherPets   Boolean?
+  hasChildren    Boolean?
+  status         AdoptionRequestStatus @default(PENDING)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  listing        PetListing            @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  requester      User                  @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, requesterId, status], map: "listing_requester_status_unique")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  adminUserId String
+  action      String
+  entityType  String
+  entityId    String
+  metadata    String?  @db.Text
+  createdAt   DateTime @default(now())
+  adminUser   User     @relation("AdminAuditLogs", fields: [adminUserId], references: [id], onDelete: Cascade)
+}
