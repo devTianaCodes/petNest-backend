@@ -81,7 +81,11 @@ export async function loginUser(input: { email: string; password: string }, req:
     email: user.email,
     role: user.role,
     status: user.status,
-    isEmailVerified: user.isEmailVerified
+    isEmailVerified: user.isEmailVerified,
+    fullName: user.fullName,
+    phone: user.phone,
+    city: user.city,
+    state: user.state
   };
 
   const accessToken = signAccessToken(authUser);
@@ -140,7 +144,11 @@ export async function refreshSession(req: Request, res: Response) {
     email: storedToken.user.email,
     role: storedToken.user.role,
     status: storedToken.user.status,
-    isEmailVerified: storedToken.user.isEmailVerified
+    isEmailVerified: storedToken.user.isEmailVerified,
+    fullName: storedToken.user.fullName,
+    phone: storedToken.user.phone,
+    city: storedToken.user.city,
+    state: storedToken.user.state
   };
 
   const nextRefreshToken = signRefreshToken(payload.sub);
