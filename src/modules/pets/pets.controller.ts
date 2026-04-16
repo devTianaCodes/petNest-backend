@@ -184,6 +184,7 @@ export async function deleteListing(req: Request, res: Response) {
 
 export async function submitListing(req: Request, res: Response) {
   const listingId = String(req.params.id);
+  const action = req.body.action as "submit" | "mark-adopted";
   const currentListing = await prisma.petListing.findUnique({
     where: { id: listingId },
     include: { images: true }
@@ -193,18 +194,28 @@ export async function submitListing(req: Request, res: Response) {
     throw new AppError(404, "Listing not found");
   }
 
-  if (!req.user!.isEmailVerified) {
-    throw new AppError(403, "Verify your email before submitting a listing");
+  if (action === "submit") {
+    if (currentListing.status !== ListingStatus.DRAFT && currentListing.status !== ListingStatus.REJECTED) {
+      throw new AppError(400, "Only draft or rejected listings can be submitted");
+    }
+
+    if (!req.user!.isEmailVerified) {
+      throw new AppError(403, "Verify your email before submitting a listing");
+    }
+
+    if (currentListing.images.length === 0) {
+      throw new AppError(400, "At least one image is required before submission");
+    }
   }
 
-  if (currentListing.images.length === 0) {
-    throw new AppError(400, "At least one image is required before submission");
+  if (action === "mark-adopted" && currentListing.status !== ListingStatus.PUBLISHED) {
+    throw new AppError(400, "Only published listings can be marked as adopted");
   }
 
   const listing = await prisma.petListing.update({
     where: { id: listingId },
     data: {
-      status: req.body.action === "mark-adopted" ? ListingStatus.ADOPTED : ListingStatus.PENDING_APPROVAL
+      status: action === "mark-adopted" ? ListingStatus.ADOPTED : ListingStatus.PENDING_APPROVAL
     }
   });
 
