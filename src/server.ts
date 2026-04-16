@@ -1,6 +1,7 @@
 import { app } from "./app.js";
 import { env } from "./config/env.js";
+import { logger } from "./lib/logger.js";
 
 app.listen(env.PORT, () => {
-  console.log(`PetNest backend listening on http://localhost:${env.PORT}`);
+  logger.logger.info(`PetNest backend listening on http://localhost:${env.PORT}`);
 });

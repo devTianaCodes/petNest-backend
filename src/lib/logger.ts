@@ -1,11 +1,23 @@
-import type { NextFunction, Request, Response } from "express";
+import type { Request, Response } from "express";
+import { pinoHttp } from "pino-http";
 
-export function logger(req: Request, res: Response, next: NextFunction) {
-  const startedAt = Date.now();
+export const logger = pinoHttp<Request, Response>({
+  quietReqLogger: true,
+  customLogLevel(_req: Request, res: Response, error?: Error) {
+    if (error || res.statusCode >= 500) {
+      return "error";
+    }
 
-  res.on("finish", () => {
-    console.info(`${req.method} ${req.originalUrl} ${res.statusCode} ${Date.now() - startedAt}ms`);
-  });
+    if (res.statusCode >= 400) {
+      return "warn";
+    }
 
-  next();
-}
+    return "info";
+  },
+  customSuccessMessage(req: Request, res: Response) {
+    return `${req.method} ${req.originalUrl} ${res.statusCode}`;
+  },
+  customErrorMessage(req: Request, res: Response, error: Error) {
+    return `${req.method} ${req.originalUrl} ${res.statusCode} ${error.message}`;
+  }
+});
