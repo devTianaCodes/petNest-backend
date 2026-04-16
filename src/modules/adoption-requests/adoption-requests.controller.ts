@@ -3,6 +3,22 @@ import { AdoptionRequestStatus, ListingStatus } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/http.js";
 
+function canOwnerUpdateRequest(currentStatus: AdoptionRequestStatus, nextStatus: AdoptionRequestStatus) {
+  if (currentStatus === AdoptionRequestStatus.APPROVED || currentStatus === AdoptionRequestStatus.REJECTED || currentStatus === AdoptionRequestStatus.WITHDRAWN) {
+    return false;
+  }
+
+  if (nextStatus === AdoptionRequestStatus.CONTACTED) {
+    return currentStatus === AdoptionRequestStatus.PENDING;
+  }
+
+  return nextStatus === AdoptionRequestStatus.APPROVED || nextStatus === AdoptionRequestStatus.REJECTED;
+}
+
+function canRequesterWithdrawRequest(currentStatus: AdoptionRequestStatus) {
+  return currentStatus === AdoptionRequestStatus.PENDING || currentStatus === AdoptionRequestStatus.CONTACTED;
+}
+
 export async function createAdoptionRequest(req: Request, res: Response) {
   const listingId = String(req.params.id);
   const listing = await prisma.petListing.findUnique({
@@ -108,8 +124,18 @@ export async function updateAdoptionRequestStatus(req: Request, res: Response) {
     throw new AppError(403, "Forbidden");
   }
 
-  if (isRequester && nextStatus !== AdoptionRequestStatus.WITHDRAWN) {
-    throw new AppError(403, "Requesters can only withdraw their own requests");
+  if (isRequester) {
+    if (nextStatus !== AdoptionRequestStatus.WITHDRAWN) {
+      throw new AppError(403, "Requesters can only withdraw their own requests");
+    }
+
+    if (!canRequesterWithdrawRequest(request.status)) {
+      throw new AppError(400, "Only pending or contacted requests can be withdrawn");
+    }
+  }
+
+  if (isOwner && !canOwnerUpdateRequest(request.status, nextStatus)) {
+    throw new AppError(400, "This request cannot move to the selected status");
   }
 
   const updated = await prisma.adoptionRequest.update({
