@@ -98,8 +98,9 @@ export async function getUsers(_req: Request, res: Response) {
   return res.json({ users });
 }
 
-export async function suspendUser(req: Request, res: Response) {
+export async function updateUserStatus(req: Request, res: Response) {
   const userId = String(req.params.id);
+  const nextStatus = req.body.status as UserStatus;
   const user = await prisma.user.findUnique({
     where: { id: userId }
   });
@@ -110,9 +111,9 @@ export async function suspendUser(req: Request, res: Response) {
 
   const updated = await prisma.user.update({
     where: { id: userId },
-    data: { status: UserStatus.SUSPENDED }
+    data: { status: nextStatus }
   });
 
-  await writeAuditLog(req.user!.id, "user_suspended", "User", updated.id);
+  await writeAuditLog(req.user!.id, nextStatus === UserStatus.SUSPENDED ? "user_suspended" : "user_activated", "User", updated.id);
   return res.json({ user: updated });
 }

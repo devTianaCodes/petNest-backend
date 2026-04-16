@@ -7,9 +7,9 @@ import {
   getPendingListings,
   getUsers,
   rejectListing,
-  suspendUser
+  updateUserStatus
 } from "./admin.controller.js";
-import { rejectListingSchema } from "./admin.schema.js";
+import { rejectListingSchema, updateUserStatusSchema } from "./admin.schema.js";
 
 export const adminRouter = Router();
 
@@ -18,4 +18,4 @@ adminRouter.get("/pets/pending", asyncHandler(getPendingListings));
 adminRouter.patch("/pets/:id/approve", asyncHandler(approveListing));
 adminRouter.patch("/pets/:id/reject", validateBody(rejectListingSchema), asyncHandler(rejectListing));
 adminRouter.get("/users", asyncHandler(getUsers));
-adminRouter.patch("/users/:id/suspend", asyncHandler(suspendUser));
+adminRouter.patch("/users/:id/status", validateBody(updateUserStatusSchema), asyncHandler(updateUserStatus));
