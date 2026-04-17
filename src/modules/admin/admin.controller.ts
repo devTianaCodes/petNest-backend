@@ -87,6 +87,8 @@ export async function getUsers(_req: Request, res: Response) {
       id: true,
       fullName: true,
       email: true,
+      city: true,
+      state: true,
       role: true,
       status: true,
       isEmailVerified: true,
