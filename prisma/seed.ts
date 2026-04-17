@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { ListingStatus, PetSex, PetSize, PrismaClient, UserRole } from "@prisma/client";
 import bcrypt from "bcrypt";
 
