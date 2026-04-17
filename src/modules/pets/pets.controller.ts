@@ -59,9 +59,17 @@ export async function getPublicListings(req: Request, res: Response) {
     vaccinated?: boolean;
     spayedNeutered?: boolean;
     search?: string;
+    sort: "newest" | "oldest" | "name-asc";
     page: number;
     limit: number;
   };
+
+  const orderBy =
+    query.sort === "oldest"
+      ? [{ publishedAt: "asc" as const }, { createdAt: "asc" as const }]
+      : query.sort === "name-asc"
+        ? [{ name: "asc" as const }]
+        : [{ publishedAt: "desc" as const }, { createdAt: "desc" as const }];
 
   const where: Prisma.PetListingWhereInput = {
     status: ListingStatus.PUBLISHED,
@@ -94,7 +102,7 @@ export async function getPublicListings(req: Request, res: Response) {
       include: listingInclude,
       skip: (query.page - 1) * query.limit,
       take: query.limit,
-      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }]
+      orderBy
     }),
     prisma.petListing.count({ where })
   ]);

@@ -7,3 +7,7 @@ export const rejectListingSchema = z.object({
 export const updateUserStatusSchema = z.object({
   status: z.enum(["ACTIVE", "SUSPENDED"])
 });
+
+export const updateReportStatusSchema = z.object({
+  status: z.enum(["RESOLVED", "DISMISSED"])
+});

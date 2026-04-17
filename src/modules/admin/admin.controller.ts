@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { ListingStatus, UserStatus } from "@prisma/client";
+import { ListingStatus, ReportStatus, UserStatus } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/http.js";
 
@@ -118,4 +118,62 @@ export async function updateUserStatus(req: Request, res: Response) {
 
   await writeAuditLog(req.user!.id, nextStatus === UserStatus.SUSPENDED ? "user_suspended" : "user_activated", "User", updated.id);
   return res.json({ user: updated });
+}
+
+export async function getReports(_req: Request, res: Response) {
+  const items = await prisma.listingReport.findMany({
+    include: {
+      listing: {
+        include: {
+          category: true,
+          images: true,
+          owner: {
+            select: { id: true, fullName: true, city: true, state: true }
+          }
+        }
+      },
+      reporter: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          city: true,
+          state: true
+        }
+      }
+    },
+    orderBy: { createdAt: "asc" }
+  });
+
+  return res.json({ items });
+}
+
+export async function updateReportStatus(req: Request, res: Response) {
+  const reportId = String(req.params.id);
+  const nextStatus = req.body.status as ReportStatus;
+  const report = await prisma.listingReport.findUnique({
+    where: { id: reportId }
+  });
+
+  if (!report || report.status !== ReportStatus.OPEN) {
+    throw new AppError(404, "Open report not found");
+  }
+
+  const updated = await prisma.listingReport.update({
+    where: { id: reportId },
+    data: {
+      status: nextStatus,
+      reviewedAt: new Date(),
+      reviewedByAdminId: req.user!.id
+    }
+  });
+
+  await writeAuditLog(
+    req.user!.id,
+    nextStatus === ReportStatus.RESOLVED ? "report_resolved" : "report_dismissed",
+    "ListingReport",
+    updated.id
+  );
+
+  return res.json({ report: updated });
 }

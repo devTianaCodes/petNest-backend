@@ -46,6 +46,7 @@ export const listingQuerySchema = z.object({
   vaccinated: optionalBooleanQuery,
   spayedNeutered: optionalBooleanQuery,
   search: z.string().optional(),
+  sort: z.enum(["newest", "oldest", "name-asc"]).default("newest"),
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(24).default(12)
 });

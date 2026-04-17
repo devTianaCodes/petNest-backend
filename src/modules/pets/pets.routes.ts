@@ -13,12 +13,15 @@ import {
   submitListing,
   updateListing
 } from "./pets.controller.js";
+import { getMyListingAnalytics, getPublicListingStats } from "./pets.analytics.controller.js";
 import { deleteListingImage, uploadListingImages } from "./pets.images.controller.js";
 import { listingPayloadSchema, listingQuerySchema, submissionSchema } from "./pets.schema.js";
 
 export const petsRouter = Router();
 
 petsRouter.get("/", validateQuery(listingQuerySchema), asyncHandler(getPublicListings));
+petsRouter.get("/stats/public", asyncHandler(getPublicListingStats));
+petsRouter.get("/analytics/mine", requireAuth, asyncHandler(getMyListingAnalytics));
 petsRouter.get("/mine", requireAuth, asyncHandler(getMyListings));
 petsRouter.get("/:id", asyncHandler(getListingById));
 petsRouter.post("/", requireAuth, writeRateLimiter, validateBody(listingPayloadSchema), asyncHandler(createListing));
