@@ -31,6 +31,15 @@ test("refresh tokens can be verified and hashed from the raw token", () => {
   const expectedHash = crypto.createHash("sha256").update(refreshToken.rawToken).digest("hex");
 
   assert.equal(payload.sub, "user_123");
+  assert.ok(payload.jti);
   assert.equal(refreshToken.tokenHash.length, 64);
   assert.equal(refreshToken.tokenHash, expectedHash);
+});
+
+test("refresh tokens are unique for the same user", () => {
+  const firstToken = signRefreshToken("user_123");
+  const secondToken = signRefreshToken("user_123");
+
+  assert.notEqual(firstToken.rawToken, secondToken.rawToken);
+  assert.notEqual(firstToken.tokenHash, secondToken.tokenHash);
 });

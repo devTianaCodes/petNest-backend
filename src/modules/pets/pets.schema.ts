@@ -48,7 +48,7 @@ export const listingQuerySchema = z.object({
   search: z.string().optional(),
   sort: z.enum(["newest", "oldest", "name-asc"]).default("newest"),
   page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(24).default(12)
+  limit: z.coerce.number().min(1).max(50).default(12)
 });
 
 export const submissionSchema = z.object({

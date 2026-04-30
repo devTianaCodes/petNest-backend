@@ -10,7 +10,7 @@ export function signAccessToken(user: AuthUser) {
 }
 
 export function signRefreshToken(userId: string) {
-  const rawToken = jwt.sign({ sub: userId }, env.JWT_REFRESH_SECRET, {
+  const rawToken = jwt.sign({ sub: userId, jti: crypto.randomUUID() }, env.JWT_REFRESH_SECRET, {
     expiresIn: `${env.REFRESH_TOKEN_TTL_DAYS}d` as jwt.SignOptions["expiresIn"]
   });
 
@@ -25,5 +25,5 @@ export function verifyAccessToken(token: string) {
 }
 
 export function verifyRefreshToken(token: string) {
-  return jwt.verify(token, env.JWT_REFRESH_SECRET) as { sub: string };
+  return jwt.verify(token, env.JWT_REFRESH_SECRET) as { sub: string; jti: string };
 }
