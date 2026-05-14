@@ -8,6 +8,22 @@ import bcrypt from "bcrypt";
 const prisma = new PrismaClient();
 
 const categories = ["Dog", "Cat", "Rabbit", "Bird", "Reptile", "Guinea Pig", "Hamster", "Ferret", "Other"];
+const frontendOrigin = process.env.FRONTEND_ORIGIN ?? "https://petnest-frontend.vercel.app";
+
+const categoryImagePools: Record<string, string[]> = {
+  Cat: [
+    "/success-stories/story1A.png",
+    "/success-stories/story1B.png",
+    "/success-stories/story3A.png",
+    "/success-stories/story3B.png"
+  ],
+  Dog: [
+    "/success-stories/story2A.png",
+    "/success-stories/story2B.png",
+    "/success-stories/story4A.png",
+    "/success-stories/story4B.png"
+  ]
+};
 
 type DemoAnimal = {
   listingId: string;
@@ -182,7 +198,7 @@ function sizeFor(category: string, index: number) {
 }
 
 async function upsertAnimalImage(animal: DemoAnimal, index: number) {
-  const imageUrl = imageFor(animal);
+  const imageUrl = imageFor(animal, index);
   if (!imageUrl) {
     return;
   }
@@ -200,8 +216,22 @@ async function upsertAnimalImage(animal: DemoAnimal, index: number) {
   });
 }
 
-function imageFor(animal: DemoAnimal) {
-  return animal.replacementImages.find(Boolean);
+function imageFor(animal: DemoAnimal, index: number) {
+  const categoryImages = categoryImagePools[animal.category];
+  if (categoryImages?.length) {
+    return absoluteFrontendUrl(categoryImages[index % categoryImages.length]);
+  }
+
+  return animal.replacementImages.find(Boolean) || categoryPlaceholderUrl(animal.category);
+}
+
+function absoluteFrontendUrl(pathname: string) {
+  return `${frontendOrigin}${pathname}`;
+}
+
+function categoryPlaceholderUrl(category: string) {
+  const label = encodeURIComponent(category);
+  return `https://placehold.co/640x420/e6f1ea/2f5f4a?text=${label}`;
 }
 
 main()

@@ -12,7 +12,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "npm run build && node dist/prisma/seed.js",
     "images:prompt-pack": "npm run build && node dist/src/scripts/exportImagePromptPack.js",
-    "images:import": "npm run build && node dist/src/scripts/importGeneratedImages.js"
+    "images:import": "npm run build && node dist/src/scripts/importGeneratedImages.js",
+    "images:fix-demo": "npm run build && node dist/src/scripts/fixDemoImageAssignments.js"
   },
   "prisma": {
     "seed": "npm run build && node dist/prisma/seed.js"
