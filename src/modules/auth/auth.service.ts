@@ -1,10 +1,19 @@
 import crypto from "crypto";
+import { UserRole, UserStatus } from "@prisma/client";
 import type { Request, Response } from "express";
 import { prisma } from "../../lib/prisma.js";
 import { comparePassword, hashPassword } from "../../utils/auth.js";
 import { AppError } from "../../utils/http.js";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../../utils/tokens.js";
 import { env, isProduction } from "../../config/env.js";
+
+const DEMO_USER = {
+  fullName: "Demo PetNest User",
+  email: process.env.DEMO_USER_EMAIL || "demo.user@petnest.local",
+  phone: "+1 555 0142",
+  city: "Austin",
+  state: "Texas"
+};
 
 function refreshCookieOptions() {
   return {
@@ -97,6 +106,58 @@ export async function loginUser(input: { email: string; password: string }, req:
 
   return {
     accessToken,
+    user: authUser
+  };
+}
+
+export async function loginDemoUser(req: Request, res: Response) {
+  const user = await prisma.user.upsert({
+    where: { email: DEMO_USER.email },
+    create: {
+      fullName: DEMO_USER.fullName,
+      email: DEMO_USER.email,
+      passwordHash: await hashPassword(`demo-${crypto.randomUUID()}`),
+      phone: DEMO_USER.phone,
+      city: DEMO_USER.city,
+      state: DEMO_USER.state,
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+      isEmailVerified: true
+    },
+    update: {
+      fullName: DEMO_USER.fullName,
+      phone: DEMO_USER.phone,
+      city: DEMO_USER.city,
+      state: DEMO_USER.state,
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+      isEmailVerified: true
+    }
+  });
+
+  await prisma.refreshToken.updateMany({
+    where: { userId: user.id, revokedAt: null },
+    data: { revokedAt: new Date() }
+  });
+
+  const authUser = {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    status: user.status,
+    isEmailVerified: user.isEmailVerified,
+    fullName: user.fullName,
+    phone: user.phone,
+    city: user.city,
+    state: user.state
+  };
+
+  const refreshToken = signRefreshToken(user.id);
+  await persistRefreshToken(refreshToken.rawToken, refreshToken.tokenHash, user.id, req);
+  res.cookie("refreshToken", refreshToken.rawToken, refreshCookieOptions());
+
+  return {
+    accessToken: signAccessToken(authUser),
     user: authUser
   };
 }

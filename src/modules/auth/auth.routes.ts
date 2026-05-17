@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { login, logout, me, refresh, register, verifyEmailHandler } from "./auth.controller.js";
+import { demoLogin, login, logout, me, refresh, register, verifyEmailHandler } from "./auth.controller.js";
 import { loginSchema, registerSchema, verifyEmailSchema } from "./auth.schema.js";
 import { requireAuth } from "../../middleware/auth.js";
 import { authRateLimiter } from "../../middleware/rate-limit.js";
@@ -10,6 +10,7 @@ export const authRouter = Router();
 
 authRouter.post("/register", authRateLimiter, validateBody(registerSchema), asyncHandler(register));
 authRouter.post("/login", authRateLimiter, validateBody(loginSchema), asyncHandler(login));
+authRouter.post("/demo-login", authRateLimiter, asyncHandler(demoLogin));
 authRouter.post("/logout", asyncHandler(logout));
 authRouter.post("/refresh", asyncHandler(refresh));
 authRouter.get("/me", requireAuth, asyncHandler(me));

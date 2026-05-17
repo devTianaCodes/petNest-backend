@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { prisma } from "../../lib/prisma.js";
-import { loginUser, logoutUser, refreshSession, registerUser, verifyEmail } from "./auth.service.js";
+import { loginDemoUser, loginUser, logoutUser, refreshSession, registerUser, verifyEmail } from "./auth.service.js";
 
 export async function register(req: Request, res: Response) {
   const result = await registerUser(req.body);
@@ -19,6 +19,11 @@ export async function register(req: Request, res: Response) {
 
 export async function login(req: Request, res: Response) {
   const result = await loginUser(req.body, req, res);
+  return res.json(result);
+}
+
+export async function demoLogin(req: Request, res: Response) {
+  const result = await loginDemoUser(req, res);
   return res.json(result);
 }
 
